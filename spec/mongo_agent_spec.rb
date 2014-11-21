@@ -35,13 +35,13 @@ RSpec.describe "MongoAgent::Agent" do
 
     it "throws MongoAgent::Error without attributes[:name]" do
       expect {
-        MongoAgent::Agent.new({queue_name: test_agent_queue})
+        MongoAgent::Agent.new({queue: test_agent_queue})
       }.to raise_error { |error|
         expect(error).to be_a(MongoAgent::Error)
       }
     end
 
-    it 'throws MongoAgent::Error without attributes[:queue_name]' do
+    it 'throws MongoAgent::Error without attributes[:queue]' do
       expect {
         MongoAgent::Agent.new({ name: test_agent_name })
       }.to raise_error { |error|
@@ -49,11 +49,11 @@ RSpec.describe "MongoAgent::Agent" do
       }
     end
 
-    it 'creates MongoAgent::Agent with default sleep_between when provided a name and queue_name' do
+    it 'creates MongoAgent::Agent with default sleep_between when provided a name and queue' do
       expect {
         @agent = MongoAgent::Agent.new({
           name: test_agent_name,
-          queue_name: test_agent_queue
+          queue: test_agent_queue
         })
       }.to_not raise_error
       expect(@agent.sleep_between).to eq(expected_default_sleep_between)
@@ -63,7 +63,7 @@ RSpec.describe "MongoAgent::Agent" do
       expect {
         @agent = MongoAgent::Agent.new({
           name: test_agent_name,
-          queue_name: test_agent_queue,
+          queue: test_agent_queue,
           sleep_between: test_agent_sleep_between
         })
       }.to_not raise_error
@@ -75,7 +75,7 @@ RSpec.describe "MongoAgent::Agent" do
     subject {
       MongoAgent::Agent.new({
         name: test_agent_name,
-        queue_name: test_agent_queue
+        queue: test_agent_queue
       })
     }
 
@@ -120,7 +120,7 @@ RSpec.describe "MongoAgent::Agent" do
 
       context "success" do
         context "default" do
-          it 'updates complete, agent_host but not :error_encountered' do
+          it 'updates complete, started_at, completed_at, and agent_host but not :error_encountered' do
             called = false
             processed_param = nil
             subject.process! { |task|
@@ -138,6 +138,8 @@ RSpec.describe "MongoAgent::Agent" do
             ).first
             expect(processed_task).to be
             expect(processed_task[:complete]).to eq(true)
+            expect(processed_task[:started_at]).to be
+            expect(processed_task[:completed_at]).to be
             expect(processed_task[:error_encountered]).to eq(false)
             expect(processed_task[:ready]).to eq(false)
             expect(processed_task[:agent_host]).to eq(expected_hostname)
@@ -145,7 +147,7 @@ RSpec.describe "MongoAgent::Agent" do
         end #default
 
         context "with update" do
-          it 'updates complete, agent_host, and update params, but not error_encountered' do
+          it 'updates complete, started_at, completed_at, agent_host, and update params, but not error_encountered' do
             called = false
             processed_param = nil
             subject.process! { |task|
@@ -163,6 +165,8 @@ RSpec.describe "MongoAgent::Agent" do
             ).first
             expect(processed_task).to be
             expect(processed_task[:complete]).to eq(true)
+            expect(processed_task[:started_at]).to be
+            expect(processed_task[:completed_at]).to be
             expect(processed_task[:error_encountered]).to eq(false)
             expect(processed_task[:ready]).to eq(false)
             expect(processed_task[:agent_host]).to eq(expected_hostname)
@@ -174,7 +178,7 @@ RSpec.describe "MongoAgent::Agent" do
 
       context "failure" do
         context "default" do
-          it 'updates complete, agent_host, and error_encountered' do
+          it 'updates complete, started_at, completed_at, agent_host, and error_encountered' do
             called = false
             processed_param = nil
             subject.process! { |task|
@@ -192,6 +196,8 @@ RSpec.describe "MongoAgent::Agent" do
             ).first
             expect(processed_task).to be
             expect(processed_task[:complete]).to eq(true)
+            expect(processed_task[:started_at]).to be
+            expect(processed_task[:completed_at]).to be
             expect(processed_task[:error_encountered]).to eq(true)
             expect(processed_task[:ready]).to eq(false)
             expect(processed_task[:agent_host]).to eq(expected_hostname)
@@ -199,7 +205,7 @@ RSpec.describe "MongoAgent::Agent" do
         end #default
 
         context "with update" do
-          it 'updates complete, agent_host, update params, and error_encountered' do
+          it 'updates complete, started_at, completed_at, agent_host, update params, and error_encountered' do
             called = false
             processed_param = nil
             subject.process! { |task|
@@ -217,6 +223,8 @@ RSpec.describe "MongoAgent::Agent" do
             ).first
             expect(processed_task).to be
             expect(processed_task[:complete]).to eq(true)
+            expect(processed_task[:started_at]).to be
+            expect(processed_task[:completed_at]).to be
             expect(processed_task[:error_encountered]).to eq(true)
             expect(processed_task[:ready]).to eq(false)
             expect(processed_task[:agent_host]).to eq(expected_hostname)
@@ -232,7 +240,7 @@ RSpec.describe "MongoAgent::Agent" do
     subject {
       MongoAgent::Agent.new({
         name: test_agent_name,
-        queue_name: test_agent_queue
+        queue: test_agent_queue
       })
     }
 
@@ -319,7 +327,7 @@ RSpec.describe "MongoAgent::Agent" do
     subject {
       MongoAgent::Agent.new({
         name: test_agent_name,
-        queue_name: test_agent_queue
+        queue: test_agent_queue
       })
     }
 

@@ -26,8 +26,8 @@ module MongoAgent
 # MongoDB connection:
 #   MONGO_HOST: host URL for the MongoDB, can be in any form that mongod itself can
 #               use, e.g. host, host:port, etc.
-#   MONGO_DB: the name of the Document store in the MongoDB to use find its queue.
-#             it will be created if does not exist
+#   MONGO_DB: the name of the Document store in the MongoDB to use to find its queue.
+#             it will be created if it does not exist
 
 # @author Darin London Copyright 2014
   class Agent
@@ -59,26 +59,26 @@ module MongoAgent
 
 # The name of the task queue that contains the tasks on which this agent will work.
 # @return [String]
-    attr_accessor :queue_name
+    attr_accessor :queue
 
 # number of seconds to sleep between each call to process! when running agent.work! or agent.process_while
 # default 5
     attr_accessor :sleep_between
 
 # create a new MongoAgent::Agent
-# @param attributes [Hash] with name, queue_name, and optional sleep_between
+# @param attributes [Hash] with name, queue, and optional sleep_between
 # @option attributes [String] name REQUIRED
-# @option attributes [String] queue_name REQUIRED
+# @option attributes [String] queue REQUIRED
 # @option attributes [Int] sleep_between OPTIONAL
-# @raise [MongoAgent::Error] name and queue_name are missing
+# @raise [MongoAgent::Error] name and queue are missing
     def initialize(attributes = nil)
       if attributes.nil?
-        raise MongoAgent::Error, "attributes Hash required with name and queue_name keys required"
+        raise MongoAgent::Error, "attributes Hash required with name and queue keys required"
       end
       @name = attributes[:name]
-      @queue_name = attributes[:queue_name]
-      unless @name && @queue_name
-        raise MongoAgent::Error, "attributes[:name] and attributes[:queue_name] are required!"
+      @queue = attributes[:queue]
+      unless @name && @queue
+        raise MongoAgent::Error, "attributes[:name] and attributes[:queue] are required!"
       end
       build_db()
       if attributes[:sleep_between]
@@ -156,10 +156,9 @@ module MongoAgent
       (success, update) = agent_code.call(task)
       @log[:tasks_processed] += 1
       if success
-        complete_entry(task, update)
+        complete_task(task, update)
       else
-        @log[:failed_tasks] += 1
-        fail_entry(task, update)
+        fail_task(task, update)
       end
       return
     end
@@ -200,7 +199,7 @@ module MongoAgent
       end
     end
 
-# get A MONGO_DB[queue_name] Moped::Query, either for the specified query Hash, or, when
+# get A MONGO_DB[queue] Moped::Query, either for the specified query Hash, or, when
 # query is nil, all that are currently ready for the @name.  This can be used to
 # scan through the tasks on the @queue to perform aggregation tasks:
 # @example collecting information
@@ -223,9 +222,9 @@ module MongoAgent
 # @return [Moped::Query]
     def get_tasks(query = nil)
       if query.nil?
-        return @db[@queue_name].find({agent_name: @name, ready: true})
+        return @db[@queue].find({agent_name: @name, ready: true})
       else
-        return @db[@queue_name].find(query)
+        return @db[@queue].find(query)
       end
     end
 
@@ -234,29 +233,32 @@ module MongoAgent
     def register
       task = get_tasks().first
       unless task
-        $stderr.puts "there are no ready tasks for #{@name} in queue #{@queue_name}"
+        $stderr.puts "there are no ready tasks for #{@name} in queue #{@queue}"
         return false
       end
 
       hostname = Socket.gethostname
-      get_tasks({ _id: task[:_id] }).update('$set' => {ready: false, agent_host: "#{hostname}" })
+      get_tasks({ _id: task[:_id] }).update('$set' => {ready: false, agent_host: "#{hostname}", started_at: Time.now })
       return true, task
     end
 
-    def complete_entry(task, update = nil)
+    def complete_task(task, update = nil)
       if update.nil?
         update = {}
       end
       update[:complete] = true
       update[:error_encountered] = false
+      update[:completed_at] = Time.now
       get_tasks({ _id: task[:_id] }).update('$set' => update)
     end
 
-    def fail_entry(task, update = nil)
+    def fail_task(task, update = nil)
+      @log[:failed_tasks] += 1
       if update.nil?
         update = {}
       end
       update[:complete] = true
+      update[:completed_at] = Time.now
       update[:error_encountered] = true
       get_tasks({ _id: task[:_id] }).update('$set' => update)
     end

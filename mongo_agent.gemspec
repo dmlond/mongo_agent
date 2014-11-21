@@ -1,7 +1,7 @@
 Gem::Specification.new do |s|
   s.name        = 'mongo_agent'
-  s.version     = '0.0.1'
-  s.date        = '2014-10-22'
+  s.version     = '0.0.2'
+  s.date        = '2014-11-20'
   s.summary     = "MongoAgent is a framework for creating distributed pipelines across many different servers, each using the same MongoDB as a control panel."
   s.description = <<-EOF
 MongoAgent is a framework for creating distributed pipelines across many
@@ -14,7 +14,7 @@ EOF
   s.author     = "Darin London"
   s.license    = "MIT"
   s.email       = 'darin.london@duke.edu'
-  s.files       = Dir["lib/**/*"] + Dir["spec/**/*"]
+  s.files       = ["Gemfile", ".rspec", "Rakefile"] + Dir["lib/**/*"] + Dir["spec/**/*"]
   s.test_files = Dir["spec/*.rb"]
   s.homepage    =    'http://rubygems.org/gems/mongo_agent'
 end
