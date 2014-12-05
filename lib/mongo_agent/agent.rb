@@ -14,7 +14,7 @@ module MongoAgent
 # task document by updating its agent_host field to the host that is running the
 # agent, and sets ready to false (meaning it is actually running).  When the agent
 # completes the task, it sets the complete flag to true.  If the agent encounters
-# an error during processing, it can signal failure by setting the errors_encountered
+# an error during processing, it can signal failure by setting the error_encountered
 # field to true at the time its complete flag is updated to true.
 #
 # When an Agent creates a task, it can pass a variety of messages as JSON in the task
